@@ -34,7 +34,7 @@ The process exits with code 0 on success, and 1 on failure. This means you can e
 📦 2 modules
 📁 2 local modules
 🚨 1 circular dependencies detected
-■ C:/Users/username/Repositories/deno-circular-deps/examples/mod-b.ts ▶ C:/Users/username/Repositories/deno-circular-deps/examples/mod-d.ts ▶ C:/Users/username/Repositories/deno-circular-deps/examples/mod-b.ts
+■ ./examples/mod-b.ts ▶ ./examples/mod-d.ts ▶ ./examples/mod-b.ts
 ```
 
 ## How It Works
