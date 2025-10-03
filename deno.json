@@ -1,6 +1,6 @@
 {
   "name": "@cunarist/deno-circular-deps",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "exports": "./src/mod.ts",
   "tasks": {
     "good": "deno run -A ./src/mod.ts examples/mod-a.ts",
