@@ -19,6 +19,10 @@ interface DenoInfoJson {
   modules: Module[];
 }
 
+/**
+ * Normalizes a file path by removing the "file:///" prefix.
+ * Also converst backslashes to forward slashes on Windows.
+ */
 function normalizePath(path: string): string {
   if (!path) {
     return path;
@@ -29,6 +33,22 @@ function normalizePath(path: string): string {
   return path.replace(/\\/g, "/");
 }
 
+/**
+ * Converts an absolute path to a path
+ * relative to the current working directory.
+ * Does nothing if the path is not under the current working directory.
+ */
+function toRelativePath(absolutePath: string, currentDir: string): string {
+  if (absolutePath.startsWith(currentDir)) {
+    return "." + absolutePath.slice(currentDir.length);
+  }
+  return absolutePath;
+}
+
+/**
+ * The main function that finds circular dependencies
+ * in the given Deno info JSON.
+ */
 function findCycles(info: DenoInfoJson): string[][] {
   const cycles: string[][] = [];
   const visited = new Set<string>();
@@ -128,9 +148,11 @@ async function main() {
   if (cyclesCount === 0) {
     console.log("\u{2705} No circular dependencies found");
   } else {
+    const currentDir = normalizePath(Deno.cwd());
     console.log(`\u{1f6a8} ${cyclesCount} circular dependencies detected`);
     for (const cycle of cycles) {
-      const dimmedCycle = cycle.map((c) => `\x1b[2m${c}\x1b[22m`);
+      const relativeCycle = cycle.map((c) => toRelativePath(c, currentDir));
+      const dimmedCycle = relativeCycle.map((c) => `\x1b[2m${c}\x1b[22m`);
       console.log("\u{25a0} " + dimmedCycle.join(" \u{25b6} "));
     }
     Deno.exit(1);
