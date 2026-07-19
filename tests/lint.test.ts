@@ -20,7 +20,7 @@ function lint(
     `${FIXTURE}/${relativePath}`,
     source,
   );
-  return diagnostics.filter((d) => d.id === `dependency-check/${rule}`);
+  return diagnostics.filter((d) => d.id === `import-check/${rule}`);
 }
 
 /** Applies the reported fixes to the source, right to left. */
@@ -196,7 +196,7 @@ Deno.test("a JSONC config on disk is read end to end", () => {
     plugin,
     `${dir}/src/components/mod.ts`,
     source,
-  ).filter((d) => d.id === "dependency-check/no-parent-import");
+  ).filter((d) => d.id === "import-check/no-parent-import");
 
   assertEquals(found.length, 1);
   assertEquals(applyFixes(source, found), `import { utils } from "#utils";\n`);

@@ -1,4 +1,4 @@
-# Deno Dependency Check
+# Deno Import Check
 
 Keep a Deno module graph free of cycles and clearly layered.
 
@@ -17,7 +17,7 @@ the import patterns that create cycles in the first place, right in the editor.
 ## CLI
 
 ```shell
-deno run -A jsr:@cunarist/deno-dependency-check somefile.ts someotherfile.ts
+deno run -A jsr:@cunarist/deno-import-check somefile.ts someotherfile.ts
 ```
 
 Pass every entry point your project has. They are merged into one graph, so a
@@ -56,7 +56,7 @@ modules are traversed, so remote and JSR dependencies are ignored.
 ```json
 {
   "lint": {
-    "plugins": ["jsr:@cunarist/deno-dependency-check/lint"]
+    "plugins": ["jsr:@cunarist/deno-import-check/lint"]
   }
 }
 ```
@@ -68,8 +68,8 @@ To drop a rule, name it in `rules.exclude`:
 ```json
 {
   "lint": {
-    "plugins": ["jsr:@cunarist/deno-dependency-check/lint"],
-    "rules": { "exclude": ["dependency-check/no-absolute-import"] }
+    "plugins": ["jsr:@cunarist/deno-import-check/lint"],
+    "rules": { "exclude": ["import-check/no-absolute-import"] }
   }
 }
 ```
@@ -83,7 +83,7 @@ instead of this package.
 import {
   enforceLayerOrder,
   noParentImport,
-} from "jsr:@cunarist/deno-dependency-check/lint";
+} from "jsr:@cunarist/deno-import-check/lint";
 
 const plugin: Deno.lint.Plugin = {
   name: "my-rules",

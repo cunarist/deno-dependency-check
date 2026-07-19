@@ -1,6 +1,6 @@
 # Agent Notes
 
-`@cunarist/deno-dependency-check` keeps a Deno module graph free of cycles and
+`@cunarist/deno-import-check` keeps a Deno module graph free of cycles and
 clearly layered. It ships two surfaces from one package:
 
 - **CLI** (`src/mod.ts`, the `.` export) resolves the whole module graph through

@@ -697,13 +697,13 @@ function fixImportBlock(
  * ```json
  * {
  *   "lint": {
- *     "plugins": ["jsr:@cunarist/deno-dependency-check/lint"]
+ *     "plugins": ["jsr:@cunarist/deno-import-check/lint"]
  *   }
  * }
  * ```
  */
 const plugin: Deno.lint.Plugin = {
-  name: "dependency-check",
+  name: "import-check",
   rules: {
     "no-parent-import": noParentImport,
     "no-absolute-import": noAbsoluteImport,

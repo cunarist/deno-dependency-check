@@ -1,6 +1,6 @@
 {
-  "name": "@cunarist/deno-dependency-check",
-  "version": "0.6.0",
+  "name": "@cunarist/deno-import-check",
+  "version": "0.7.0",
   "exports": {
     ".": "./src/mod.ts",
     "./lint": "./src/lint.ts"
