@@ -53,6 +53,16 @@ Do not add a third-party import sorter alongside it. `@ayk/lint-import-order`
 was removed for this reason: it classifies `#` specifiers as external packages,
 so the two plugins fight over the same lines and each undoes the other's fix.
 
+## Every rule is a named export
+
+A new rule goes into the default plugin **and** gets its own `export const`, so
+users can compose a plugin from a subset alongside rules of their own. The
+`every rule is exported and registered under the same name` test fails if one is
+registered without being exported.
+
+Exported names are the camel case form of the rule name. They are public API
+now, so renaming one is a breaking change.
+
 ## The plugin must have zero dependencies
 
 `src/lint.ts` and everything it imports must not import any external package.

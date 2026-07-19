@@ -1,7 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 
 import { parseConfigText } from "#imports";
-import plugin from "#lint";
+import plugin, * as rules from "#lint";
 import { normalizePath, parentDir } from "#paths";
 
 const FIXTURE = parentDir(normalizePath(import.meta.url)) + "/fixture";
@@ -560,4 +560,18 @@ Deno.test("a substituted backtick specifier stays unreadable", () => {
   const found = lint("src/utils/mod.ts", source, "enforce-layer-order");
 
   assertEquals(found.length, 0);
+});
+
+Deno.test("every rule is exported and registered under the same name", () => {
+  // The named exports are the composition API, so a rule must never be
+  // registered in the default plugin without also being exported.
+  const exported = Object.entries(rules).filter(([, value]) =>
+    typeof (value as Deno.lint.Rule)?.create === "function"
+  );
+  const registered = Object.values(plugin.rules);
+
+  assertEquals(exported.length, registered.length);
+  for (const [, rule] of exported) {
+    assertEquals(registered.includes(rule as Deno.lint.Rule), true);
+  }
 });

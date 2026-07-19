@@ -63,6 +63,41 @@ modules are traversed, so remote and JSR dependencies are ignored.
 
 Then run `deno lint`, or `deno lint --fix` to apply the automatic fixes.
 
+To drop a rule, name it in `rules.exclude`:
+
+```json
+{
+  "lint": {
+    "plugins": ["jsr:@cunarist/deno-dependency-check/lint"],
+    "rules": { "exclude": ["dependency-check/no-absolute-import"] }
+  }
+}
+```
+
+Every rule is also exported by name, so you can build a plugin holding only the
+ones you want, alongside rules of your own. Point `plugins` at your own file
+instead of this package.
+
+```ts
+// lint.ts
+import {
+  enforceLayerOrder,
+  noParentImport,
+} from "jsr:@cunarist/deno-dependency-check/lint";
+
+const plugin: Deno.lint.Plugin = {
+  name: "my-rules",
+  rules: {
+    "no-parent-import": noParentImport,
+    "enforce-layer-order": enforceLayerOrder,
+  },
+};
+
+export default plugin;
+```
+
+The exported names are the camel case form of the rule names below.
+
 The rules read the `#`-prefixed entries of the `imports` map in the nearest
 `deno.json` or `deno.jsonc`. That map is the single source of truth: it declares
 which modules exist, what each module's entry point is, and — through

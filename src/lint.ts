@@ -88,7 +88,14 @@ function visitSpecifiers(
   };
 }
 
-const noAbsoluteImport: Deno.lint.Rule = {
+/**
+ * The `no-absolute-import` rule.
+ *
+ * Bans specifiers starting with `/` or `file:`. A leading slash resolves against
+ * the file system root rather than the project root, and a `file:` URL hard codes
+ * one machine's layout.
+ */
+export const noAbsoluteImport: Deno.lint.Rule = {
   create(ctx) {
     return visitSpecifiers((node, specifier) => {
       // A "C:/..." specifier is rejected by Deno itself as an unknown scheme,
@@ -140,7 +147,14 @@ function targetModule(
   return config.bySpecifier.get(prefix.specifier.slice(0, -1)) ?? null;
 }
 
-const noParentImport: Deno.lint.Rule = {
+/**
+ * The `no-parent-import` rule.
+ *
+ * Bans `../` specifiers, rewriting one to its `#` entry where a matching entry
+ * exists. Reaching up and back down couples two modules through their file layout
+ * instead of their public surface.
+ */
+export const noParentImport: Deno.lint.Rule = {
   create(ctx) {
     return visitSpecifiers((node, specifier) => {
       if (!specifier.startsWith("../")) {
@@ -177,7 +191,13 @@ const noParentImport: Deno.lint.Rule = {
   },
 };
 
-const noBarrelBypass: Deno.lint.Rule = {
+/**
+ * The `no-barrel-bypass` rule.
+ *
+ * Bans reaching past a module entry point through a trailing-slash `#` mapping,
+ * such as `#components/internal.ts`.
+ */
+export const noBarrelBypass: Deno.lint.Rule = {
   create(ctx) {
     return visitSpecifiers((node, specifier) => {
       if (!specifier.startsWith("#")) {
@@ -234,7 +254,14 @@ function resolveTarget(
   return config.byTarget.get(resolved) ?? null;
 }
 
-const enforceLayerOrder: Deno.lint.Rule = {
+/**
+ * The `enforce-layer-order` rule.
+ *
+ * Treats the order of `#` entries in `deno.json` as the layer order, top layer
+ * first: a module may only import modules declared below it. Also rejects a file
+ * that imports its own module entry point.
+ */
+export const enforceLayerOrder: Deno.lint.Rule = {
   create(ctx) {
     return visitSpecifiers((node, specifier) => {
       const config = findImportsConfig(ctx.filename);
@@ -278,7 +305,13 @@ const enforceLayerOrder: Deno.lint.Rule = {
   },
 };
 
-const enforceModFile: Deno.lint.Rule = {
+/**
+ * The `enforce-mod-file` rule.
+ *
+ * Requires module entry points to be named `mod.ts`. Reports both a file named
+ * `index` and any specifier pointing at one.
+ */
+export const enforceModFile: Deno.lint.Rule = {
   create(ctx) {
     const specifiers = visitSpecifiers((node, specifier) => {
       // Only paths this project controls. A package may ship whatever
@@ -314,7 +347,13 @@ const enforceModFile: Deno.lint.Rule = {
   },
 };
 
-const noRelativeBypass: Deno.lint.Rule = {
+/**
+ * The `no-relative-bypass` rule.
+ *
+ * Bans a `./` specifier from descending more than one level, and from landing
+ * anywhere but that folder's entry point.
+ */
+export const noRelativeBypass: Deno.lint.Rule = {
   create(ctx) {
     return visitSpecifiers((node, specifier) => {
       // Parent imports belong to "no-parent-import", and bare or "#"
@@ -350,7 +389,13 @@ const noRelativeBypass: Deno.lint.Rule = {
   },
 };
 
-const preferAliasImport: Deno.lint.Rule = {
+/**
+ * The `prefer-alias-import` rule.
+ *
+ * Requires the `#` alias when a `./` specifier crosses into another folder whose
+ * file is already declared as an entry. Same-folder siblings are left alone.
+ */
+export const preferAliasImport: Deno.lint.Rule = {
   create(ctx) {
     return visitSpecifiers((node, specifier) => {
       // Parent specifiers are banned outright by "no-parent-import", which
@@ -458,7 +503,13 @@ function memberName(specifier: Deno.lint.ImportSpecifier): string {
   return imported.type === "Identifier" ? imported.name : specifier.local.name;
 }
 
-const enforceImportOrder: Deno.lint.Rule = {
+/**
+ * The `enforce-import-order` rule.
+ *
+ * Groups imports as packages, then `#` aliases, then relative paths, separated by
+ * a blank line and sorted alphabetically. Names inside the braces are sorted too.
+ */
+export const enforceImportOrder: Deno.lint.Rule = {
   create(ctx) {
     return {
       "Program:exit"(program) {
