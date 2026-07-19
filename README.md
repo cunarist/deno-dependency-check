@@ -181,6 +181,16 @@ clump them by case instead of alphabetically.
 Treats the order of `#` entries in `deno.json` as the layer order, top layer
 first: **a module may only import modules declared below it.**
 
+```json
+{
+  "imports": {
+    "#components": "./src/components/mod.ts",
+    "#utils": "./src/utils/mod.ts",
+    "#types": "./src/types/mod.ts"
+  }
+}
+```
+
 ```ts
 // in ./src/components/mod.ts — declared first, so everything is below it
 import { format } from "#utils"; // correct
