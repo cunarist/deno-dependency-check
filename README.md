@@ -98,24 +98,10 @@ export default plugin;
 
 The exported names are the camel case form of the rule names below.
 
-The rules read the `#`-prefixed entries of the `imports` map in the nearest
-`deno.json` or `deno.jsonc`. That map is the single source of truth: it declares
-which modules exist, what each module's entry point is, and — through
-declaration order — how they are layered.
-
-```json
-{
-  "imports": {
-    "#components": "./src/components/mod.ts",
-    "#utils": "./src/utils/mod.ts",
-    "#types": "./src/types/mod.ts"
-  }
-}
-```
-
-A file belongs to the module whose directory contains it, so everything under
-`./src/components/` is part of `#components`. An entry pointing at a plain file
-rather than a barrel (`mod.ts`, `index.ts`) owns only that one file.
+The rules read the `#` entries of the `imports` map in the nearest `deno.json`,
+which declare what the modules are. A file belongs to the module whose directory
+contains it, so an entry pointing at a barrel owns everything beside it, while
+one pointing at a plain file owns only that file.
 
 ### `no-parent-import`
 
