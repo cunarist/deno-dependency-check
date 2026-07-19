@@ -99,6 +99,12 @@ rule rewrites the specifier for you and keeps your quote style. When nothing
 matches, it reports the resolved path and leaves the fix to you — either add an
 entry for it, or move the shared code into a module that already has one.
 
+### `no-absolute-import`
+
+Bans specifiers starting with `/` or `file:`. A leading slash resolves against
+the file system root rather than the project root, a `file:` URL hard codes one
+machine's layout, and both slip past every path rule here.
+
 ### `prefer-alias-import`
 
 The `./` counterpart. When a relative path crosses into another folder and that

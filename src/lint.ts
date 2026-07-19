@@ -42,10 +42,23 @@ function visitSpecifiers(
     const source = node.source;
     // Dynamic imports accept any expression, and a re-export without a
     // specifier has none at all. Only literal strings are analyzable.
-    if (source === null || source.type !== "Literal") {
+    if (source === null) {
       return;
     }
-    if (typeof source.value !== "string") {
+    // A backtick with nothing to substitute is as fixed as a quoted string,
+    // and Deno resolves it the same way, so it must not become a way to
+    // write a specifier the rules never see.
+    if (source.type === "TemplateLiteral") {
+      if (source.expressions.length > 0 || source.quasis.length !== 1) {
+        return;
+      }
+      check(
+        source as unknown as Deno.lint.StringLiteral,
+        source.quasis[0].raw,
+      );
+      return;
+    }
+    if (source.type !== "Literal" || typeof source.value !== "string") {
       return;
     }
     check(source, source.value);
@@ -56,17 +69,55 @@ function visitSpecifiers(
     ExportNamedDeclaration: handle,
     ExportAllDeclaration: handle,
     ImportExpression: handle,
+    // `type T = import("#utils").Thing` reaches another module without an
+    // import statement, so it needs its own node. The specifier sits one
+    // level deeper here, wrapped in a TSLiteralType.
+    TSImportType(node) {
+      const argument = node.argument as unknown as {
+        type: string;
+        literal?: Deno.lint.StringLiteral;
+      };
+      const literal = argument.type === "TSLiteralType"
+        ? argument.literal
+        : argument as unknown as Deno.lint.StringLiteral;
+      if (literal === undefined || typeof literal.value !== "string") {
+        return;
+      }
+      check(literal, literal.value);
+    },
   };
 }
 
+const noAbsoluteImport: Deno.lint.Rule = {
+  create(ctx) {
+    return visitSpecifiers((node, specifier) => {
+      // A "C:/..." specifier is rejected by Deno itself as an unknown scheme,
+      // so only these two forms can actually resolve.
+      const absolute = specifier.startsWith("/") ||
+        specifier.startsWith("file:");
+      if (!absolute) {
+        return;
+      }
+      ctx.report({
+        node,
+        message: `"${specifier}" is an absolute path.`,
+        hint:
+          'A leading slash resolves against the file system root rather than the project root, and a "file:" URL hard codes one machine\'s layout. Use a sibling path or a "#" entry.',
+      });
+    });
+  },
+};
+
 /**
- * Rewrites a specifier while keeping the original quote character.
+ * Rewrites a specifier while keeping the original quote character. A template
+ * literal has no `raw` of its own, and rewriting it as a plain string is the
+ * point, so it falls through to double quotes.
  */
 function quoteLike(
   original: Deno.lint.StringLiteral,
   specifier: string,
 ): string {
-  const quote = original.raw.startsWith("'") ? "'" : '"';
+  const quote = original.raw?.startsWith("'") ? "'" : '"';
   return quote + specifier + quote;
 }
 
@@ -604,6 +655,7 @@ const plugin: Deno.lint.Plugin = {
   name: "dependency-check",
   rules: {
     "no-parent-import": noParentImport,
+    "no-absolute-import": noAbsoluteImport,
     "prefer-alias-import": preferAliasImport,
     "no-barrel-bypass": noBarrelBypass,
     "no-relative-bypass": noRelativeBypass,

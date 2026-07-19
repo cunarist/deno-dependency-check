@@ -483,3 +483,81 @@ Deno.test('the CLI reports unused "#" imports', async () => {
 
   Deno.removeSync(dir, { recursive: true });
 });
+
+Deno.test("no-absolute-import rejects a leading slash", () => {
+  const source = `import { c } from "/src/components/internal.ts";\n`;
+  const found = lint("src/utils/mod.ts", source, "no-absolute-import");
+
+  assertEquals(found.length, 1);
+  assertStringIncludes(found[0].message, "is an absolute path");
+});
+
+Deno.test("no-absolute-import leaves relative and package specifiers alone", () => {
+  const source = `import { a } from "./internal.ts";\n` +
+    `import { b } from "#types";\n` +
+    `import { c } from "npm:lit@3";\n`;
+  const found = lint("src/components/mod.ts", source, "no-absolute-import");
+
+  assertEquals(found.length, 0);
+});
+
+Deno.test("rules see a type-level import expression", () => {
+  // `type T = import("...")` reaches another module without an import
+  // statement, so it must not become a way around the layer order.
+  const source = `type T = import("#components").Thing;\nexport type U = T;\n`;
+  const found = lint("src/utils/mod.ts", source, "enforce-layer-order");
+
+  assertEquals(found.length, 1);
+  assertStringIncludes(found[0].message, `must not import "#components"`);
+});
+
+Deno.test("a type-level import of the own entry point is caught", () => {
+  const source = `type T = import("./mod.ts").Thing;\nexport type U = T;\n`;
+  const found = lint(
+    "src/components/internal.ts",
+    source,
+    "enforce-layer-order",
+  );
+
+  assertEquals(found.length, 1);
+  assertStringIncludes(found[0].message, "must not import its own entry point");
+});
+
+Deno.test("no-absolute-import rejects a file URL", () => {
+  // "C:/..." needs no case of its own: Deno rejects it as an unknown scheme,
+  // so it can never resolve in the first place.
+  const source = `import { t } from "file:///C:/project/src/thing.ts";\n`;
+  const found = lint("src/utils/mod.ts", source, "no-absolute-import");
+
+  assertEquals(found.length, 1);
+  assertStringIncludes(found[0].message, "is an absolute path");
+});
+
+Deno.test("a backtick specifier is read like a quoted one", () => {
+  const source =
+    "const m = await import(`#components`);\nexport const x = m;\n";
+  const found = lint("src/utils/mod.ts", source, "enforce-layer-order");
+
+  assertEquals(found.length, 1);
+  assertStringIncludes(found[0].message, `must not import "#components"`);
+});
+
+Deno.test("a backtick specifier is rewritten as a quoted one", () => {
+  const source = "const m = await import(`../utils/mod.ts`);\n";
+  const found = lint("src/components/mod.ts", source, "no-parent-import");
+
+  assertEquals(found.length, 1);
+  assertEquals(
+    applyFixes(source, found),
+    `const m = await import("#utils");\n`,
+  );
+});
+
+Deno.test("a substituted backtick specifier stays unreadable", () => {
+  // Nothing can be concluded about it, so reporting would be a guess.
+  const source = "const n = 'components';\n" +
+    "const m = await import(`#${n}`);\nexport const x = m;\n";
+  const found = lint("src/utils/mod.ts", source, "enforce-layer-order");
+
+  assertEquals(found.length, 0);
+});
