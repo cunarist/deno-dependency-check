@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "#utils": "./src/utils/mod.ts",
+    "#types": "./src/types/mod.ts",
+    "#components": "./src/components/mod.ts",
+    "#components/": "./src/components/",
+    "#app-store": "./src/app-store.ts",
+    "#lit": "npm:lit@3"
+  }
+}

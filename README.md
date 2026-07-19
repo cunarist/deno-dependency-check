@@ -1,24 +1,27 @@
-# Deno Circular Dependency Checker
+# Deno Dependency Check
 
-A circular dependency detection tool for Deno projects
+Keep a Deno module graph acyclic and layered.
 
-## Features
+This package ships two complementary halves:
 
-- 🔍 Detects circular dependencies in your Deno module graph
-- 🚀 Fast analysis using `deno info` under the hood
-- ⚡ Can be used in CI/CD pipelines and pre-commit hooks
+|                 | Runs as     | Catches                                               |
+| --------------- | ----------- | ----------------------------------------------------- |
+| **CLI**         | `deno run`  | Circular dependencies anywhere in the module graph    |
+| **Lint plugin** | `deno lint` | Parent imports, barrel bypasses, and layer violations |
 
-## Usage
+They are split this way because a Deno lint plugin only ever sees one file's
+syntax tree. It cannot follow imports, so it cannot detect a cycle. The CLI
+resolves the whole graph and finds cycles after the fact; the lint rules stop
+the import patterns that create cycles in the first place, right in the editor.
 
-This tool is designed for terminal use.
+## CLI
 
 ```shell
-deno run -A jsr:@cunarist/deno-circular-deps somefile.ts
+deno run -A jsr:@cunarist/deno-dependency-check somefile.ts
 ```
 
-The process exits with code 0 on success, and 1 on failure. This means you can easily use this in CI such as GitHub Actions.
-
-## Output Example
+The process exits with code 0 on success and 1 on failure, so it drops straight
+into CI or a pre-commit hook.
 
 ✅ **No circular dependencies:**
 
@@ -37,12 +40,90 @@ The process exits with code 0 on success, and 1 on failure. This means you can e
 ■ ./examples/mod-b.ts ▶ ./examples/mod-d.ts ▶ ./examples/mod-b.ts
 ```
 
-## How It Works
+Under the hood it reads `deno info --json` for the complete module graph, walks
+it depth first to find cycles, and reports each one as a path. Only local
+modules are traversed, so remote and JSR dependencies are ignored.
 
-1. **Analysis**: Uses `deno info --json` to get the complete module dependency graph
-2. **Detection**: Implements a depth-first search algorithm to detect cycles
-3. **Reporting**: Provides clear, actionable feedback about circular dependencies
-4. **Integration**: Exits with error code 1 if circular dependencies are found, making it perfect for CI/CD
+## Lint plugin
+
+```json
+{
+  "lint": {
+    "plugins": ["jsr:@cunarist/deno-dependency-check/lint"]
+  }
+}
+```
+
+Then run `deno lint`, or `deno lint --fix` to apply the automatic fixes.
+
+The rules read the `#`-prefixed entries of the `imports` map in the nearest
+`deno.json` or `deno.jsonc`. That map is the single source of truth: it declares
+which modules exist, what each module's entry point is, and — through
+declaration order — how they are layered.
+
+```json
+{
+  "imports": {
+    "#utils": "./src/utils/mod.ts",
+    "#types": "./src/types/mod.ts",
+    "#components": "./src/components/mod.ts"
+  }
+}
+```
+
+A file belongs to the module whose directory contains it, so everything under
+`./src/components/` is part of `#components`. An entry pointing at a plain file
+rather than a barrel (`mod.ts`, `index.ts`) owns only that one file.
+
+### `no-parent-import`
+
+Bans `../` specifiers. Reaching up and back down couples two modules through
+their file layout instead of their public surface, which is how import cycles
+usually start.
+
+```ts
+import { utils } from "../utils/mod.ts"; // error
+import { utils } from "#utils"; //           correct
+import { helper } from "./helper.ts"; //     correct, same folder
+```
+
+**Automatically fixable.** When the resolved path matches a declared entry, the
+rule rewrites the specifier for you and keeps your quote style. When nothing
+matches, it reports the resolved path and leaves the fix to you — either add an
+entry for it, or move the shared code into a module that already has one.
+
+### `no-barrel-bypass`
+
+Bans reaching past a module's entry point through a trailing-slash mapping such
+as `"#components/": "./src/components/"`.
+
+```ts
+import { thing } from "#components/internal.ts"; // error
+import { thing } from "#components"; //             correct
+```
+
+Whatever the importer needs should be re-exported from the entry point, so each
+module keeps exactly one public surface. If you declare no trailing-slash
+mappings at all, this rule never fires.
+
+### `enforce-layer-order`
+
+Treats the declaration order of `#` entries as the layer order: **a module may
+only import modules declared before it.** Given the config above, `#components`
+may import `#utils` and `#types`, but `#utils` may not import `#components`.
+
+```ts
+// in ./src/utils/mod.ts
+import { components } from "#components"; // error, declared later
+```
+
+A module importing its own entry point is flagged too, since that is a cycle
+waiting to happen — use a same-folder relative import instead.
+
+This makes cycles between modules structurally impossible rather than merely
+detectable, which is why it pairs with the CLI instead of duplicating it. The
+ordering is deliberately implicit in the config so there is nothing extra to
+keep in sync; ordering the `imports` map bottom-up doubles as documentation.
 
 ## License
 

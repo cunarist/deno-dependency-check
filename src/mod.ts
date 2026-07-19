@@ -1,4 +1,6 @@
-﻿interface Dependency {
+import { normalizePath, toRelativePath } from "./paths.ts";
+
+interface Dependency {
   specifier: string;
   code?: {
     specifier: string;
@@ -17,32 +19,6 @@ interface Module {
 
 interface DenoInfoJson {
   modules: Module[];
-}
-
-/**
- * Normalizes a file path by removing the "file:///" prefix.
- * Also converst backslashes to forward slashes on Windows.
- */
-function normalizePath(path: string): string {
-  if (!path) {
-    return path;
-  }
-  if (path.startsWith("file:///")) {
-    path = path.replace("file:///", "");
-  }
-  return path.replace(/\\/g, "/");
-}
-
-/**
- * Converts an absolute path to a path
- * relative to the current working directory.
- * Does nothing if the path is not under the current working directory.
- */
-function toRelativePath(absolutePath: string, currentDir: string): string {
-  if (absolutePath.startsWith(currentDir)) {
-    return "." + absolutePath.slice(currentDir.length);
-  }
-  return absolutePath;
 }
 
 /**
