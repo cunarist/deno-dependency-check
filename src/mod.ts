@@ -6,6 +6,8 @@
  * are traversed, so remote and JSR dependencies are ignored. The process exits
  * with code 0 when the graph is acyclic and 1 when it is not, which makes it
  * usable directly in CI or a pre-commit hook.
+ *
+ * @module
  */
 
 import { normalizePath, toRelativePath } from "./paths.ts";

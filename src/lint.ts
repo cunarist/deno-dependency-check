@@ -5,6 +5,8 @@
  * imports and cannot detect a cycle on its own. Instead these rules forbid the
  * import patterns that create cycles in the first place, reporting them in the
  * editor.
+ *
+ * @module
  */
 
 import {
